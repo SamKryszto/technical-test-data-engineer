@@ -1,4 +1,3 @@
-import pickle
 import pandas as pd
 import numpy as np
 import logging
@@ -7,6 +6,12 @@ from etl.utils import load_data_from_pickle, save_data_as_pickle
 # Set up logging for better error handling and debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Constants for date fallbacks and default values
+DEFAULT_DATE = pd.to_datetime('1970-01-01')
+DEFAULT_GENRE = 'Unknown Genre'
+DEFAULT_GENDER = 'Unknown Gender'
+DEFAULT_ARTIST = 'Unknown Artist'
 
 def standardize_genres(dataframe):
     """Standardize genre names (e.g., lowercase and handle inconsistencies)."""
@@ -17,11 +22,13 @@ def standardize_genres(dataframe):
 def clean_duration(dataframe):
     """Convert track durations from 'MM:SS' format to total seconds."""
     logger.info("Cleaning durations...")
+    
     def convert_to_seconds(duration):
         try:
             minutes, seconds = map(int, duration.split(":"))
             return minutes * 60 + seconds
-        except ValueError:
+        except (ValueError, AttributeError):
+            logger.warning(f"Invalid duration format encountered: {duration}")
             return np.nan  # If conversion fails, return NaN
 
     dataframe['duration_seconds'] = dataframe['duration'].apply(convert_to_seconds)
@@ -32,33 +39,36 @@ def handle_missing_data(dataframe, data_type):
     logger.info(f"Handling missing data for {data_type}...")
     
     if data_type == 'user':
-        # Handling missing data for users
-        dataframe['gender'] = dataframe['gender'].fillna('Unknown Gender')
-        dataframe['favorite_genres'] = dataframe['favorite_genres'].fillna('Unknown Genre')
+        dataframe['gender'] = dataframe['gender'].fillna(DEFAULT_GENDER)
+        dataframe['favorite_genres'] = dataframe['favorite_genres'].fillna(DEFAULT_GENRE)
     elif data_type == 'track':
-        # Handling missing data for tracks (this is where 'artist' and 'genres' are relevant)
-        dataframe['artist'] = dataframe['artist'].fillna('Unknown Artist')
-        dataframe['genres'] = dataframe['genres'].fillna('Unknown Genre')
-        # For tracks dataframe, drop rows with missing 'duration' (this is critical)
-        dataframe = dataframe.dropna(subset=['duration'])
+        dataframe['artist'] = dataframe['artist'].fillna(DEFAULT_ARTIST)
+        dataframe['genres'] = dataframe['genres'].fillna(DEFAULT_GENRE)
+        dataframe = dataframe.dropna(subset=['duration'])  # Drop rows with missing 'duration'
     elif data_type == 'listen_history':
-        # Listen history does not need 'artist' or 'genres', so no need to fill those
-        dataframe = dataframe.dropna(subset=['timestamp'])
+        dataframe = dataframe.dropna(subset=['timestamp'])  # Drop rows with missing timestamps
 
     return dataframe
 
 def normalize_track_data(dataframe):
     """Normalize track duration (optional, if needed for analytics)."""
     logger.info("Normalizing track durations...")
+    
     if 'duration_seconds' in dataframe:
         max_duration = dataframe['duration_seconds'].max()
         min_duration = dataframe['duration_seconds'].min()
-        dataframe['normalized_duration'] = (dataframe['duration_seconds'] - min_duration) / (max_duration - min_duration)
+        # Guard against division by zero if min == max
+        if max_duration != min_duration:
+            dataframe['normalized_duration'] = (dataframe['duration_seconds'] - min_duration) / (max_duration - min_duration)
+        else:
+            dataframe['normalized_duration'] = 0  # If all values are the same, set normalized_duration to 0
+
     return dataframe
 
 def text_normalization(dataframe):
     """Apply normalization to text fields such as 'name' and 'artist'."""
     logger.info("Normalizing text fields 'name' and 'artist'...")
+    
     dataframe['name'] = dataframe['name'].str.strip().str.replace(r'[^a-zA-Z0-9 ]', '', regex=True)
     dataframe['artist'] = dataframe['artist'].str.strip().str.replace(r'[^a-zA-Z0-9 ]', '', regex=True)
     return dataframe
@@ -66,14 +76,12 @@ def text_normalization(dataframe):
 def transform_listen_history_data(listen_history_df):
     """Transform listen history data, including handling missing timestamps."""
     logger.info("Handling missing data for listen history...")
-    listen_history_df['created_at'] = pd.to_datetime(listen_history_df['created_at'], errors='coerce')
-    listen_history_df['updated_at'] = pd.to_datetime(listen_history_df['updated_at'], errors='coerce')
     
-    # Handle missing timestamps by filling with a default value or removing rows
-    listen_history_df['created_at'] = listen_history_df['created_at'].fillna(pd.to_datetime('1970-01-01'))
-    listen_history_df['updated_at'] = listen_history_df['updated_at'].fillna(pd.to_datetime('1970-01-01'))
+    # Convert date columns to datetime, with coercion to handle invalid dates
+    listen_history_df['created_at'] = pd.to_datetime(listen_history_df['created_at'], errors='coerce').fillna(DEFAULT_DATE)
+    listen_history_df['updated_at'] = pd.to_datetime(listen_history_df['updated_at'], errors='coerce').fillna(DEFAULT_DATE)
     
-    # Handle missing 'items' and convert it to a list (if needed)
+    # Handle 'items' field to ensure it's a list
     listen_history_df['items'] = listen_history_df['items'].apply(lambda x: x if isinstance(x, list) else [])
     
     return listen_history_df
@@ -95,7 +103,7 @@ def transform_data(tracks_df, users_df, listen_history_df):
     logger.info("Transforming users data...")
     users_df = handle_missing_data(users_df, data_type='user')
     
-    # Transform listen history (e.g., removing invalid entries)
+    # Transform listen history (e.g., handling missing timestamps and 'items' field)
     logger.info("Transforming listen history...")
     listen_history_df = transform_listen_history_data(listen_history_df)
     
@@ -133,7 +141,7 @@ def main():
 
     except Exception as e:
         logger.error(f"Error processing data: {e}")
+        logger.debug("Exception details:", exc_info=True)
 
-        
 if __name__ == "__main__":
     main()
