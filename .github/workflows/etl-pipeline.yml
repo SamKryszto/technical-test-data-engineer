@@ -9,29 +9,9 @@ on:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
 jobs:
-  setup:
-    name: Set Up Environment
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10'
-      - name: Install Dependencies
-        run: |
-          for i in {1..3}; do
-            python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && break || sleep 10
-          done
-
   extract:
     name: Extract Data
     runs-on: ubuntu-latest
-    needs: setup
     timeout-minutes: 10
     steps:
       - name: Checkout Code
@@ -82,7 +62,7 @@ jobs:
           path: clean_data.pkl
 
   load:
-    name: Load Data
+    name: Load Data and Upload CSVs
     runs-on: ubuntu-latest
     needs: transform
     timeout-minutes: 30
@@ -104,31 +84,9 @@ jobs:
             python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
             PYTHONPATH=src python -m etl.load && break || sleep 10
           done
-      - name: Save Output Data
-        uses: actions/upload-artifact@v3
-        with:
-          name: output-data
-          path: output_data/
-
-  validate_output:
-    name: Validate and Upload CSVs
-    runs-on: ubuntu-latest
-    needs: load
-    steps:
-      - name: Download Output Data
-        uses: actions/download-artifact@v3
-        with:
-          name: output-data
-          path: output_data/
-      - name: Preview CSV Files
-        run: |
-          echo "Previewing listen_history.csv:"
-          head -n 5 output_data/listen_history.csv
-          echo "Previewing tracks.csv:"
-          head -n 5 output_data/tracks.csv
-          echo "Previewing users.csv:"
-          head -n 5 output_data/users.csv
-      - name: Upload CSVs as Artifacts
+        env:
+          PYTHONPATH: src
+      - name: Upload Final CSVs
         uses: actions/upload-artifact@v3
         with:
           name: final-csvs

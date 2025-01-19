@@ -21,6 +21,9 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+output_data/*
+raw_data.pkl 
+clean_data.pkl
 
 # Directories potentially created on remote AFP share
 .AppleDB
