@@ -26,8 +26,8 @@ jobs:
       - name: Start FastAPI App in Background
         run: 
           python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
-          uvicorn moovitamix_fastapi.main:app --host localhost --port 8000 --reload &
-          sleep 10
+          uvicorn moovitamix_fastapi.main:app --host 0.0.0.0 --port 8000 --reload &
+          sleep 30
 
       - name: Wait for FastAPI to be ready (Debugging step)
         run: |
