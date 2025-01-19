@@ -29,6 +29,12 @@ jobs:
           uvicorn moovitamix_fastapi.main:app --host localhost --port 8000 --reload &
           sleep 10
 
+      - name: Wait for FastAPI to be ready (Debugging step)
+        run: |
+          echo "Waiting for FastAPI app to be ready..."
+          sleep 10  # Wait for the FastAPI server to be ready
+          curl -I http://localhost:8000  # Test if FastAPI app is accessible
+
       - name: Run Extract Job
         run: |
             for i in {1..3}; do
