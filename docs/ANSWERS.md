@@ -10,27 +10,60 @@ Au niveau du développement local, on peut utiliser un venv pour compartementali
 
 ### 2.a Développement du pipeline
 
-J'ai choisi un pipeline de type ETL pour ce projet. Chaque étape du pipeline est exécutée dans un fichier distinct afin de garantir une séparation des responsabilités et d'avoir un contrôle plus granulaire sur l'exécutions des étapes. Voici les responsabilités des trois classes:
+J'ai choisi de développer un pipeline de type **ETL** (Extraction, Transformation, Chargement). Chaque étape du pipeline est exécutée dans un fichier distinct afin de garantir une séparation des responsabilités et d'avoir un contrôle plus granulaire sur l'exécution des étapes. Voici un résumé des responsabilités des trois fichiers principaux :
 
-- extract.py : On appelle l'API (FastAPI) pour récupérer les données. On les convertit en dataframes (pandas), puis on en fait un pickle qui sera utilisé dans la prochaine étape.
+#### 1. `extract.py`
 
-- transform.py : Le fichier récupère le pickle de l'étape précédente, puis nettoie et normalise les données avec les processus suivants:
+Ce fichier est responsable de l'extraction des données depuis l'API (FastAPI). Le processus suivant est réalisé :
+- Appel à l'API pour récupérer les données.
+- Conversion des données extraites en DataFrames via **pandas**.
+- Sérialisation des DataFrames en utilisant **pickle**, ce qui permet de passer les données à l'étape suivante.
 
-1. Standardisation des genres : Conversion des noms de genres en minuscules et suppression des espaces superflus.
-2. Nettoyage des durées : Conversion des durées des morceaux du format 'MM:SS' en secondes.
-3. Gestion des données manquantes :
-- Remplissage des valeurs manquantes pour le genre et les genres préférés des utilisateurs.
-- Remplissage des valeurs manquantes pour l'artiste et les genres des morceaux.
-- Suppression des lignes avec des durées ou des timestamps manquants.
-4. Normalisation des données de texte : Nettoyage des champs texte (name, artist) en supprimant les caractères non alphanumériques.
-5. Transformation des données d'historique d'écoute : Conversion des dates en format datetime avec gestion des erreurs et nettoyage du champ 'items' pour garantir qu'il soit une liste.
-6. Normalisation de la durée des morceaux : Mise à l'échelle des durées des morceaux entre 0 et 1, si nécessaire
+#### 2. `transform.py`
 
-Une fois les données nettoyées, on en fait un autre pickle.
+Le fichier **`transform.py`** s'occupe de la transformation et du nettoyage des données. Voici les étapes de transformation :
 
-- load.py : Le fichier récupère le pickle des données nettoyées, puis convertit ces données en format CSV en les sauvant dans la racine du projet.
+1. **Standardisation des genres** :  
+   - Conversion des noms de genres en minuscules.
+   - Suppression des espaces superflus.
 
-Note: J'ai choisi d'utiliser les fichiers pickle pour stocker les données à chaque étape du pipeline, car cela permet une mise en œuvre rapide et simple, adaptée aux contraintes de temps du test. Cependant, pour un environnement de production, des solutions plus robustes comme le format Parquet (idéal pour le traitement de grandes quantités de données), ou des bases de données relationnelles, seraient préférables. Ces options offrent une meilleure scalabilité et une gestion plus efficace des données à long terme.
+2. **Nettoyage des durées** :  
+   - Conversion des durées des morceaux du format `MM:SS` en secondes.
+
+3. **Gestion des données manquantes** :
+   - Remplissage des valeurs manquantes pour le genre et les genres préférés des utilisateurs.
+   - Remplissage des valeurs manquantes pour l'artiste et les genres des morceaux.
+   - Suppression des lignes contenant des durées ou des timestamps manquants.
+
+4. **Normalisation des données de texte** :  
+   - Nettoyage des champs texte (par exemple, `name`, `artist`) en supprimant les caractères non alphanumériques.
+
+5. **Transformation des données d'historique d'écoute** :
+   - Conversion des dates en format `datetime`, avec gestion des erreurs.
+   - Nettoyage du champ `items` pour garantir qu'il soit une liste.
+
+6. **Normalisation de la durée des morceaux** :  
+   - Mise à l'échelle des durées des morceaux entre 0 et 1 si nécessaire.
+
+Une fois les données nettoyées, elles sont sérialisées dans un autre fichier **pickle** pour être utilisées à l'étape suivante.
+
+#### 3. `load.py`
+
+Ce fichier prend le **pickle** des données nettoyées et effectue l'opération suivante :
+- Conversion des données en format **CSV**.
+- Sauvegarde du fichier CSV dans la racine du projet.
+
+#### Remarque sur l'utilisation de Pickle
+
+- **Pourquoi Pickle** :  
+   J'ai choisi d'utiliser le format **pickle** pour stocker les données à chaque étape du pipeline, car cela permet une mise en œuvre rapide et simple. Cette approche est adaptée aux contraintes de temps du test.
+  
+- **Alternatives pour un environnement de production** :
+   - **Parquet** : Idéal pour le traitement de grandes quantités de données, car il est optimisé pour des performances élevées.
+   - **Bases de données relationnelles** : Utiliser des bases de données comme **PostgreSQL** ou **MySQL** serait plus robuste et scalable pour un environnement de production.
+
+Ces solutions offrent une meilleure gestion à long terme des données et une meilleure scalabilité.
+
 
 
 ### 2.b Orchestration du pipeline
@@ -89,25 +122,25 @@ Bien que ces tests dépassent la portée du test technique demandé, j'y ai réf
 #### Schéma de la base de données pour les données provenant des trois sources :
 
 Table tracks
-id (PK, INTEGER) : Identifiant unique du morceau.
-name (VARCHAR) : Nom du morceau.
-genres (VARCHAR) : Genres musicaux.
-duration_seconds (INTEGER) : Durée en secondes.
-artist (VARCHAR, facultatif) : Nom de l'artiste.
+- id (PK, INTEGER) : Identifiant unique du morceau.
+- name (VARCHAR) : Nom du morceau.
+- genres (VARCHAR) : Genres musicaux.
+- duration_seconds (INTEGER) : Durée en secondes.
+- artist (VARCHAR, facultatif) : Nom de l'artiste.
 
 Table users
-id (PK, INTEGER) : Identifiant unique de l'utilisateur.
-name (VARCHAR) : Nom de l'utilisateur.
-gender (VARCHAR) : Genre de l'utilisateur (par défaut "Unknown Gender").
-favorite_genres (VARCHAR, facultatif) : Genres favoris.
+- id (PK, INTEGER) : Identifiant unique de l'utilisateur.
+- name (VARCHAR) : Nom de l'utilisateur.
+- gender (VARCHAR) : Genre de l'utilisateur (par défaut "Unknown Gender").
+- favorite_genres (VARCHAR, facultatif) : Genres favoris.
 
 Table listen_history
-id (PK, BIGINT) : Identifiant unique de l'enregistrement.
-user_id (FK vers users.id, INTEGER) : Identifiant de l'utilisateur.
-track_id (FK vers tracks.id, INTEGER) : Identifiant du morceau.
-timestamp (TIMESTAMP) : Heure d'écoute.
-created_at (TIMESTAMP) : Date de création.
-updated_at (TIMESTAMP) : Date de mise à jour.
+- id (PK, BIGINT) : Identifiant unique de l'enregistrement.
+- user_id (FK vers users.id, INTEGER) : Identifiant de l'utilisateur.
+- track_id (FK vers tracks.id, INTEGER) : Identifiant du morceau.
+- timestamp (TIMESTAMP) : Heure d'écoute.
+- created_at (TIMESTAMP) : Date de création.
+- updated_at (TIMESTAMP) : Date de mise à jour.
 
 #### Considérations par rapport au format actuel des données :
 
