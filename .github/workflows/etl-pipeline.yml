@@ -30,13 +30,7 @@ jobs:
           pip install -r requirements.txt
           cd src/moovitamix_fastapi
           python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload &
-          sleep 30
-
-      - name: Wait for FastAPI to be ready (Debugging step)
-        run: |
-          echo "Waiting for FastAPI app to be ready..."
-          sleep 10  # Wait for the FastAPI server to be ready
-          curl -I http://localhost:8000  # Test if FastAPI app is accessible
+          sleep 10
 
       - name: Run Extract Job
         run: |
