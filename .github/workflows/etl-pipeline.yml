@@ -30,17 +30,15 @@ jobs:
 
       - name: Start FastAPI App in Background
         run: |
-          source venv/bin/activate
-          cd src/moovitamix_fastapi  # Move into the correct directory
-          PYTHONPATH=$(pwd) python -m moovitamix_fastapi.main --host localhost --port 8000 --reload &  # Run FastAPI as a module in the background
-          sleep 10  # Give FastAPI some time to start
+          PYTHONPATH=src python -m uvicorn moovitamix_fastapi.main:app --host localhost --port 8000 --reload &
+          sleep 10
       
 
 
       - name: Run Extract Job
         run: |
-          source venv/bin/activate
-          PYTHONPATH=src python -m etl.extract  # Run the extract job while FastAPI is running in the background
+          python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
+          PYTHONPATH=src python -m etl.extract && break || sleep 10
 
       - name: Save Extracted Data
         uses: actions/upload-artifact@v4  
