@@ -11,7 +11,7 @@ on:
 jobs:
   extract:
     name: Extract Data
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  
     timeout-minutes: 10
     steps:
       - name: Checkout Code
@@ -27,14 +27,14 @@ jobs:
             PYTHONPATH=src python -m etl.extract && break || sleep 10
           done
       - name: Save Extracted Data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  
         with:
           name: raw-data
           path: raw_data.pkl
 
   transform:
     name: Transform Data
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  
     needs: extract
     timeout-minutes: 10
     steps:
@@ -45,10 +45,10 @@ jobs:
         with:
           python-version: '3.10'
       - name: Download Extracted Data
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  
         with:
           name: raw-data
-          path: ./  # Root directory
+          path: ./  
       - name: Install Dependencies and Run Transform
         run: |
           for i in {1..3}; do
@@ -56,14 +56,14 @@ jobs:
             PYTHONPATH=src python -m etl.transform && break || sleep 10
           done
       - name: Save Transformed Data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  
         with:
           name: clean-data
           path: clean_data.pkl
 
   load:
     name: Load Data and Upload CSVs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  
     needs: transform
     timeout-minutes: 30
     steps:
@@ -74,10 +74,10 @@ jobs:
         with:
           python-version: '3.10'
       - name: Download Transformed Data
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  
         with:
           name: clean-data
-          path: ./  # Root directory
+          path: ./  
       - name: Install Dependencies and Run Load
         run: |
           for i in {1..3}; do
@@ -87,14 +87,14 @@ jobs:
         env:
           PYTHONPATH: src
       - name: Upload Final CSVs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  
         with:
           name: final-csvs
           path: output_data/*.csv
 
   notify:
     name: Notify Success or Failure
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  
     needs: [extract, transform, load]
     if: always()  # Always run, regardless of success or failure
     steps:
