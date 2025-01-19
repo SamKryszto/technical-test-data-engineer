@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 from typing import Dict
 from config import API_BASE_URL
-from etl.utils import save_data_as_pickle
+from .utils import save_data_as_pickle
 
 # Set up logging for better error handling and debugging
 logging.basicConfig(level=logging.INFO)
