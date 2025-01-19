@@ -41,7 +41,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-          python -m etl.extract  # Run extract as a package
+          PYTHONPATH=src python -m etl.extract  # Set PYTHONPATH to 'src'
 
       - name: Save Extracted Data
         uses: actions/upload-artifact@v3
@@ -71,7 +71,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-          python -m etl.transform  # Run transform as a package
+          PYTHONPATH=src python -m etl.transform  # Set PYTHONPATH to 'src'
 
       - name: Save Transformed Data
         uses: actions/upload-artifact@v3
@@ -101,7 +101,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-          python -m etl.load  # Run load as a package
+          PYTHONPATH=src python -m etl.load  # Set PYTHONPATH to 'src'
 
       - name: Save Output Data
         uses: actions/upload-artifact@v3
