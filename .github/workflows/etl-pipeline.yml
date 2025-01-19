@@ -39,10 +39,6 @@ jobs:
               PYTHONPATH=src python -m etl.extract && break || sleep 10
             done
 
-      - name: Check if raw_data.pkl exists
-        run: |
-          ls -l  # This will confirm that raw_data.pkl is in the root directory
-
       - name: Save Extracted Data
         uses: actions/upload-artifact@v4  
         with:
