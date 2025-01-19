@@ -31,8 +31,8 @@ jobs:
       - name: Start FastAPI App in Background
         run: |
           source venv/bin/activate
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &  # Run FastAPI in the background
-          sleep 10  # Wait for FastAPI to start
+          nohup python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload &  
+          sleep 10  
 
       - name: Run Extract Job
         run: |
