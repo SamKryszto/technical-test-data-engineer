@@ -16,16 +16,29 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
-      - name: Install Dependencies and Run Extract
+
+      - name: Install Dependencies and Set Up Virtual Environment
         run: |
-          for i in {1..3}; do
-            python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
-            PYTHONPATH=src python -m etl.extract && break || sleep 10
-          done
+          python -m venv venv  # Create the virtual environment
+          source venv/bin/activate
+          pip install -r requirements.txt  # Install all dependencies for both FastAPI and extract
+
+      - name: Start FastAPI App in Background
+        run: |
+          source venv/bin/activate
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &  # Run FastAPI in the background
+          sleep 10  # Wait for FastAPI to start
+
+      - name: Run Extract Job
+        run: |
+          source venv/bin/activate
+          PYTHONPATH=src python -m etl.extract  # Run the extract job while FastAPI is running in the background
+
       - name: Save Extracted Data
         uses: actions/upload-artifact@v4  
         with:
@@ -40,21 +53,25 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
+
       - name: Download Extracted Data
         uses: actions/download-artifact@v4  
         with:
           name: raw-data
           path: ./  
+
       - name: Install Dependencies and Run Transform
         run: |
           for i in {1..3}; do
             python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
             PYTHONPATH=src python -m etl.transform && break || sleep 10
           done
+
       - name: Save Transformed Data
         uses: actions/upload-artifact@v4  
         with:
@@ -69,15 +86,18 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
+
       - name: Download Transformed Data
         uses: actions/download-artifact@v4  
         with:
           name: clean-data
           path: ./  
+
       - name: Install Dependencies and Run Load
         run: |
           for i in {1..3}; do
@@ -86,6 +106,7 @@ jobs:
           done
         env:
           PYTHONPATH: src
+
       - name: Upload Final CSVs
         uses: actions/upload-artifact@v4  
         with:
