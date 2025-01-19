@@ -31,7 +31,7 @@ jobs:
       - name: Start FastAPI App in Background
         run: |
           source venv/bin/activate
-          nohup python -m uvicorn src.moovitamix_fastapi.main:app --host 0.0.0.0 --port 8000 --reload &  # Adjusted path to main.py
+          PYTHONPATH=src nohup python -m uvicorn moovitamix_fastapi.main:app --host 0.0.0.0 --port 8000 --reload &  # Adjusted path and PYTHONPATH
           sleep 10  # Give FastAPI some time to start
 
       - name: Run Extract Job
