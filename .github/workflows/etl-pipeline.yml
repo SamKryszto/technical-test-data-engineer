@@ -5,6 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
 jobs:
   setup:
@@ -14,15 +16,17 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
       - name: Install Dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
+          for i in {1..3}; do
+            python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && break || sleep 10
+          done
 
   extract:
     name: Extract Data
@@ -38,11 +42,10 @@ jobs:
           python-version: '3.10'
       - name: Install Dependencies and Run Extract
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-          PYTHONPATH=src python -m etl.extract  # Set PYTHONPATH to 'src'
-
+          for i in {1..3}; do
+            python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
+            PYTHONPATH=src python -m etl.extract && break || sleep 10
+          done
       - name: Save Extracted Data
         uses: actions/upload-artifact@v3
         with:
@@ -53,7 +56,7 @@ jobs:
     name: Transform Data
     runs-on: ubuntu-latest
     needs: extract
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -68,11 +71,10 @@ jobs:
           path: ./  # Root directory
       - name: Install Dependencies and Run Transform
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-          PYTHONPATH=src python -m etl.transform  # Set PYTHONPATH to 'src'
-
+          for i in {1..3}; do
+            python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
+            PYTHONPATH=src python -m etl.transform && break || sleep 10
+          done
       - name: Save Transformed Data
         uses: actions/upload-artifact@v3
         with:
@@ -98,11 +100,10 @@ jobs:
           path: ./  # Root directory
       - name: Install Dependencies and Run Load
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-          PYTHONPATH=src python -m etl.load  # Set PYTHONPATH to 'src'
-
+          for i in {1..3}; do
+            python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
+            PYTHONPATH=src python -m etl.load && break || sleep 10
+          done
       - name: Save Output Data
         uses: actions/upload-artifact@v3
         with:
@@ -137,10 +138,10 @@ jobs:
     name: Notify Success or Failure
     runs-on: ubuntu-latest
     needs: [extract, transform, load]
-    if: always()
+    if: always()  # Always run, regardless of success or failure
     steps:
       - name: Notification (Mock)
-        run: | 
+        run: |
           if [ "${{ needs.load.result }}" == "success" ]; then
             echo "ETL pipeline completed successfully!"
           else
