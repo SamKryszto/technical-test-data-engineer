@@ -74,4 +74,72 @@ jobs:
       - name: Save Transformed Data
         uses: actions/upload-artifact@v3
         with:
-          name: cl
+          name: clean-data
+          path: clean_data.pkl
+
+  load:
+    name: Load Data
+    runs-on: ubuntu-latest
+    needs: transform
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Download Transformed Data
+        uses: actions/download-artifact@v3
+        with:
+          name: clean-data
+          path: ./  # Root directory
+      - name: Install Dependencies and Run Load
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          python src/etl/load.py
+      - name: Save Output Data
+        uses: actions/upload-artifact@v3
+        with:
+          name: output-data
+          path: output_data/
+
+  validate_output:
+    name: Validate and Upload CSVs
+    runs-on: ubuntu-latest
+    needs: load
+    steps:
+      - name: Download Output Data
+        uses: actions/download-artifact@v3
+        with:
+          name: output-data
+          path: output_data/
+      - name: Preview CSV Files
+        run: |
+          echo "Previewing listen_history.csv:"
+          head -n 5 output_data/listen_history.csv
+          echo "Previewing tracks.csv:"
+          head -n 5 output_data/tracks.csv
+          echo "Previewing users.csv:"
+          head -n 5 output_data/users.csv
+      - name: Upload CSVs as Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: final-csvs
+          path: output_data/*.csv
+
+  notify:
+    name: Notify Success or Failure
+    runs-on: ubuntu-latest
+    needs: [extract, transform, load]
+    if: always()
+    steps:
+      - name: Notification (Mock)
+        run: | 
+          if [ "${{ needs.load.result }}" == "success" ]; then
+            echo "ETL pipeline completed successfully!"
+          else
+            echo "ETL pipeline failed."
+          fi
