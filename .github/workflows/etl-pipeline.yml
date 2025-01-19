@@ -31,8 +31,7 @@ jobs:
       - name: Start FastAPI App in Background
         run: |
           source venv/bin/activate
-          cd src  # Move to the src directory
-          PYTHONPATH=. nohup uvicorn moovitamix_fastapi.main:app --host 0.0.0.0 --port 8000 --reload &  # Start Uvicorn with the current directory as PYTHONPATH
+          PYTHONPATH=src python -m nohup uvicorn moovitamix_fastapi.main:app --host 0.0.0.0 --port 8000 --reload &  
           sleep 10  # Give FastAPI some time to start
 
 

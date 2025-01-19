@@ -1,4 +1,4 @@
-from classes_out import ListenHistoryOut, TracksOut, UsersOut
+from .classes_out import ListenHistoryOut, TracksOut, UsersOut
 from fastapi import FastAPI, Query
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import RedirectResponse
