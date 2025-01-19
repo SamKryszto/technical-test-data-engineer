@@ -31,9 +31,10 @@ jobs:
       - name: Start FastAPI App in Background
         run: |
           source venv/bin/activate
-          cd src
-          PYTHONPATH=src python -m moovitamix_fastapi.main --host localhost --port 8000 --reload &  # Run as module in the background
+          cd src/moovitamix_fastapi  # Move into the correct directory
+          PYTHONPATH=$(pwd) python -m moovitamix_fastapi.main --host localhost --port 8000 --reload &  # Run FastAPI as a module in the background
           sleep 10  # Give FastAPI some time to start
+      
 
 
       - name: Run Extract Job
