@@ -2,7 +2,7 @@ import requests
 import logging
 import pandas as pd
 from typing import Dict
-from config import API_BASE_URL
+from .config import API_BASE_URL
 from .utils import save_data_as_pickle
 
 # Set up logging for better error handling and debugging
