@@ -32,7 +32,7 @@ jobs:
         run: |
           source venv/bin/activate
           cd src
-          python -m moovitamix_fastapi.main --host localhost --port 8000 --reload &  # Run as module in the background
+          PYTHONPATH=src python -m moovitamix_fastapi.main --host localhost --port 8000 --reload &  # Run as module in the background
           sleep 10  # Give FastAPI some time to start
 
 
