@@ -30,14 +30,13 @@ jobs:
 
       - name: Start FastAPI App in Background
         run: |
-          PYTHONPATH=src python -m uvicorn moovitamix_fastapi.main:app --host localhost --port 8000 --reload &
+          python -m uvicorn moovitamix_fastapi.main:app --host localhost --port 8000 --reload &
           sleep 10
       
 
 
       - name: Run Extract Job
         run: |
-          python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && \
           PYTHONPATH=src python -m etl.extract && break || sleep 10
 
       - name: Save Extracted Data
